@@ -135,14 +135,17 @@ int main() {
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(45.0f), mWidth / (float) mHeight, 0.1f, 100.0f);
 
-    float t;
+    float prev_t, dt;
+    float t = 0.0f;
 
     // Rendering Loop
     while (glfwWindowShouldClose(mWindow) == false) {
         if (glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(mWindow, true);
 
+        prev_t = t;
         t = glfwGetTime();
+        dt = t - prev_t;
 
         // Background Fill Color
         glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
@@ -152,6 +155,8 @@ int main() {
         glUniform1f(tUniform, t);
         glUniform1f(shadeUniform, 0.9f);
         glUniformMatrix4fv(modelUniform, 1, GL_FALSE, glm::value_ptr(model));
+
+        view = glm::rotate(view, glm::radians(dt * 100.0f * rand() / RAND_MAX), glm::vec3(0.0f, 1.0f, 0.0f));
         glUniformMatrix4fv(viewUniform, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionUniform, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -165,3 +170,11 @@ int main() {
     }   glfwTerminate();
     return EXIT_SUCCESS;
 }
+
+/*
+ * Try some camera movement animation
+ * Try doing a generic walking anywhere camera
+ * Do some shapes finally
+ * Try some textures
+ * Build some API? Orginize the code a bit
+ */
