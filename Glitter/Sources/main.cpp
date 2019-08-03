@@ -31,16 +31,54 @@ int main() {
     gladLoadGL();
 
     float vertices[] = {
-      0.5f,  0.5f, 0.0f,   0.1f, 0.2f, 0.3f, // top right
-      0.5f, -0.5f, 0.0f,   0.4f, 0.0f, 0.5f, // bottom right
-      -0.5f, -0.5f, 0.0f,  0.5f, 0.5f, 0.5f, // bottom left
-      -0.5f,  0.5f, 0.0f,  0.1f, 0.5f, 0.7f  // top left
+      // 0.5f,  0.5f, 0.0f,   0.1f, 0.2f, 0.3f, // top right
+      // 0.5f, -0.5f, 0.0f,   0.4f, 0.0f, 0.5f, // bottom right
+      // -0.5f, -0.5f, 0.0f,  0.5f, 0.5f, 0.5f, // bottom left
+      // -0.5f,  0.5f, 0.0f,  0.1f, 0.5f, 0.7f  // top left
+
+      -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
+      0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
+      0.5f,  0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
+      -0.5f,  0.5f, -0.5f, 0.1f, 0.5f, 0.7f,
+
+      -0.5f, -0.5f,  0.5f, 0.1f, 0.2f, 0.3f,
+      0.5f, -0.5f,  0.5f,  0.4f, 0.0f, 0.5f,
+      0.5f,  0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
+      -0.5f,  0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
+
+      -0.5f,  0.5f,  0.5f, 0.1f, 0.2f, 0.3f,
+      -0.5f,  0.5f, -0.5f, 0.4f, 0.0f, 0.5f,
+      -0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f,
+      -0.5f, -0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
+
+      0.5f,  0.5f,  0.5f,  0.1f, 0.2f, 0.3f,
+      0.5f,  0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
+      0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
+      0.5f, -0.5f,  0.5f,  0.1f, 0.5f, 0.7f,
+
+      -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
+      0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
+      0.5f, -0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
+      -0.5f, -0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
+
+      -0.5f,  0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
+      0.5f,  0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
+      0.5f,  0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
+      -0.5f,  0.5f,  0.5f, 0.1f, 0.5f, 0.7f
     };
 
-    unsigned int indices[] = {  // note that we start from 0!
-      0, 1, 3,   // first triangle
-      1, 2, 3    // second triangle
-    };
+
+    const int n = 36;
+    unsigned int indices[n];
+
+    for(int i = 0; i < n / 6; ++i) {
+      indices[i * 6] = i * 4;
+      indices[i * 6 + 1] = i * 4 + 1;
+      indices[i * 6 + 2] = i * 4 + 2;
+      indices[i * 6 + 3] = i * 4 + 2;
+      indices[i * 6 + 4] = i * 4 + 3;
+      indices[i * 6 + 5] = i * 4;
+    }
 
     const char* vertexSource = R"glsl(
       #version 330 core
@@ -161,7 +199,7 @@ int main() {
         glUniformMatrix4fv(projectionUniform, 1, GL_FALSE, glm::value_ptr(projection));
 
         glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
         // Flip Buffers and Draw
