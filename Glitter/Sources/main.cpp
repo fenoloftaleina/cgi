@@ -8,6 +8,11 @@
 // Standard Headers
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+
+float randf() {
+  return rand() / (float)RAND_MAX;
+}
 
 int main() {
 
@@ -30,60 +35,24 @@ int main() {
     glfwMakeContextCurrent(mWindow);
     gladLoadGL();
 
-    float vertices[] = {
-      // 0.5f,  0.5f, 0.0f,   0.1f, 0.2f, 0.3f, // top right
-      // 0.5f, -0.5f, 0.0f,   0.4f, 0.0f, 0.5f, // bottom right
-      // -0.5f, -0.5f, 0.0f,  0.5f, 0.5f, 0.5f, // bottom left
-      // -0.5f,  0.5f, 0.0f,  0.1f, 0.5f, 0.7f  // top left
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
 
-      -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
-      0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
-      0.5f,  0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
-      -0.5f,  0.5f, -0.5f, 0.1f, 0.5f, 0.7f,
-
-      -0.5f, -0.5f,  0.5f, 0.1f, 0.2f, 0.3f,
-      0.5f, -0.5f,  0.5f,  0.4f, 0.0f, 0.5f,
-      0.5f,  0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
-      -0.5f,  0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
-
-      -0.5f,  0.5f,  0.5f, 0.1f, 0.2f, 0.3f,
-      -0.5f,  0.5f, -0.5f, 0.4f, 0.0f, 0.5f,
-      -0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f,
-      -0.5f, -0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
-
-      0.5f,  0.5f,  0.5f,  0.1f, 0.2f, 0.3f,
-      0.5f,  0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
-      0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
-      0.5f, -0.5f,  0.5f,  0.1f, 0.5f, 0.7f,
-
-      -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
-      0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
-      0.5f, -0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
-      -0.5f, -0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
-
-      -0.5f,  0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
-      0.5f,  0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
-      0.5f,  0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
-      -0.5f,  0.5f,  0.5f, 0.1f, 0.5f, 0.7f
-    };
-
-
-    const int n = 36;
-    unsigned int indices[n];
-
-    for(int i = 0; i < n / 6; ++i) {
-      indices[i * 6] = i * 4;
-      indices[i * 6 + 1] = i * 4 + 1;
-      indices[i * 6 + 2] = i * 4 + 2;
-      indices[i * 6 + 3] = i * 4 + 2;
-      indices[i * 6 + 4] = i * 4 + 3;
-      indices[i * 6 + 5] = i * 4;
+    const int n = 30000;
+    float vertices[n * 3];
+    for(int i = 0; i < n; ++i) {
+      vertices[3 * i] = randf();
+      vertices[3 * i + 1] = randf();
+      vertices[3 * i + 2] = randf();
+      // vertices[6 * i + 3] = randf() * 0.5f;
+      // vertices[6 * i + 4] = 0.1f + 0.1f * randf();
+      // vertices[6 * i + 5] = 0.1f + 0.9f * randf();
     }
 
     const char* vertexSource = R"glsl(
       #version 330 core
       layout (location = 0) in vec3 aPos;   // the position variable has attribute position 0
-      layout (location = 1) in vec3 aColor; // the color variable has attribute position 1
+      // layout (location = 1) in vec3 aColor; // the color variable has attribute position 1
 
       uniform mat4 model;
       uniform mat4 view;
@@ -94,7 +63,8 @@ int main() {
       void main()
       {
           gl_Position = projection * view * model * vec4(aPos, 1.0);
-          ourColor = aColor; // set ourColor to the input color we got from the vertex data
+          // ourColor = aColor; // set ourColor to the input color we got from the vertex data
+          ourColor = gl_Position.xyz; //vec3(0.1, 0.3, 0.8);
       }
     )glsl";
 
@@ -109,7 +79,7 @@ int main() {
 
       void main()
       {
-          outColor = vec4(ourColor * shade * pow(sin(t), 2.0) + 0.2, 1.0);
+          outColor = vec4(ourColor * shade + 0.2, 1.0);
       }
     )glsl";
 
@@ -145,18 +115,18 @@ int main() {
     unsigned int vao, vbo, ebo;
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
+    // glGenBuffers(1, &ebo);
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
-    glEnableVertexAttribArray(1);
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
+    // glEnableVertexAttribArray(1);
 
     int tUniform = glGetUniformLocation(shaderProgram, "t");
     int shadeUniform = glGetUniformLocation(shaderProgram, "shade");
@@ -166,15 +136,19 @@ int main() {
 
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(2.0f, 2.0f, 2.0f));
 
     glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+    view = glm::translate(view, glm::vec3(0.0f, -0.5f, -1.0f));
 
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(45.0f), mWidth / (float) mHeight, 0.1f, 100.0f);
 
     float prev_t, dt;
     float t = 0.0f;
+
+    int fps_frame = 0;
+    float fps_prev_t = glfwGetTime();
 
     // Rendering Loop
     while (glfwWindowShouldClose(mWindow) == false) {
@@ -185,21 +159,31 @@ int main() {
         t = glfwGetTime();
         dt = t - prev_t;
 
+        ++fps_frame;
+        if (fps_frame == 200) {
+          printf("%f fps\n", 200 / (t - fps_prev_t));
+          fps_prev_t = t;
+          fps_frame = 0;
+        }
+
         // Background Fill Color
         glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        // glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(shaderProgram);
         glUniform1f(tUniform, t);
         glUniform1f(shadeUniform, 0.9f);
         glUniformMatrix4fv(modelUniform, 1, GL_FALSE, glm::value_ptr(model));
 
-        view = glm::rotate(view, glm::radians(dt * 100.0f * rand() / RAND_MAX), glm::vec3(0.0f, 1.0f, 0.0f));
+        view = glm::rotate(view, glm::radians(10.0f * dt), glm::vec3(0.0f, 1.0f, 0.0f));
         glUniformMatrix4fv(viewUniform, 1, GL_FALSE, glm::value_ptr(view));
+
         glUniformMatrix4fv(projectionUniform, 1, GL_FALSE, glm::value_ptr(projection));
 
         glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, 0);
+        // glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 0, n);
         glBindVertexArray(0);
 
         // Flip Buffers and Draw
@@ -210,9 +194,18 @@ int main() {
 }
 
 /*
+ * Display FPS somewhere - BROKEN?
+ *
+ * Face culling or something?
+ * Check if laying out the triangles differently changes anything
+ * Read the perf stuff.
+ * Try instancing?
+ * "We got an OpenGL extension or two out of it at least. Use renderdoc and apitrace."
+ *
  * Try some camera movement animation
  * Try doing a generic walking anywhere camera
  * Do some shapes finally
  * Try some textures
  * Build some API? Orginize the code a bit
+ * Simple string to tiles + 2d platformer?
  */
