@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 
 float randf() {
   return rand() / (float)RAND_MAX;
@@ -38,15 +39,40 @@ int main() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    const int n = 30000;
-    float vertices[n * 3];
-    for(int i = 0; i < n; ++i) {
-      vertices[3 * i] = randf();
-      vertices[3 * i + 1] = randf();
-      vertices[3 * i + 2] = randf();
-      // vertices[6 * i + 3] = randf() * 0.5f;
-      // vertices[6 * i + 4] = 0.1f + 0.1f * randf();
-      // vertices[6 * i + 5] = 0.1f + 0.9f * randf();
+    int s = 100;
+
+    const int n = 3 * s * s * s;
+    float *vertices = new float[n * 3];
+
+    float dn = 1 / (float)s;
+
+    float z_mult = 50.0f;
+
+    float x, y, z;
+    x = -0.5f;
+    for(int i = 0; i < s; ++i) {
+      y = -0.5f;
+      for(int j = 0; j < s; ++j) {
+        z = -0.5f;
+        for(int k = 0; k < s; ++k) {
+          int p = 9 * (i * s * s + j * s + k);
+          vertices[p] = x;
+          vertices[p + 1] = y;
+          vertices[p + 2] = z * z_mult;
+
+          vertices[p + 3] = x + dn * 0.5f;
+          vertices[p + 4] = y;
+          vertices[p + 5] = z * z_mult;
+
+          vertices[p + 6] = x;
+          vertices[p + 7] = y + dn * 0.5f;
+          vertices[p + 8] = z * z_mult;
+
+          z += dn;
+        }
+        y += dn;
+      }
+      x += dn;
     }
 
     const char* vertexSource = R"glsl(
@@ -64,7 +90,7 @@ int main() {
       {
           gl_Position = projection * view * model * vec4(aPos, 1.0);
           // ourColor = aColor; // set ourColor to the input color we got from the vertex data
-          ourColor = gl_Position.xyz; //vec3(0.1, 0.3, 0.8);
+          ourColor = gl_Position.xyz;
       }
     )glsl";
 
@@ -119,7 +145,9 @@ int main() {
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, n * 3 * sizeof(float), vertices, GL_STATIC_DRAW);
+
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
@@ -135,16 +163,16 @@ int main() {
     int projectionUniform = glGetUniformLocation(shaderProgram, "projection");
 
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(2.0f, 2.0f, 2.0f));
+    // model = glm::rotate(model, glm::radians(-5.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(2.0f, 2.0f, 1.0f));
 
     glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view, glm::vec3(0.0f, -0.5f, -1.0f));
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
 
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(45.0f), mWidth / (float) mHeight, 0.1f, 100.0f);
 
-    float prev_t, dt;
+    float prev_t, dt = 0.0f;
     float t = 0.0f;
 
     int fps_frame = 0;
@@ -161,7 +189,7 @@ int main() {
 
         ++fps_frame;
         if (fps_frame == 200) {
-          printf("%f fps\n", 200 / (t - fps_prev_t));
+          printf("%f - %f = %f, %f fps\n", t, fps_prev_t, (t - fps_prev_t), 200 / (t - fps_prev_t));
           fps_prev_t = t;
           fps_frame = 0;
         }
@@ -176,10 +204,12 @@ int main() {
         glUniform1f(shadeUniform, 0.9f);
         glUniformMatrix4fv(modelUniform, 1, GL_FALSE, glm::value_ptr(model));
 
-        view = glm::rotate(view, glm::radians(10.0f * dt), glm::vec3(0.0f, 1.0f, 0.0f));
+        view = glm::rotate(view, glm::radians(sin(t) * 5.0f * dt), glm::vec3(0.0f, 1.0f, 0.0f));
+        view = glm::translate(view, glm::vec3(0.0f, 0.0f, dt));
         glUniformMatrix4fv(viewUniform, 1, GL_FALSE, glm::value_ptr(view));
 
         glUniformMatrix4fv(projectionUniform, 1, GL_FALSE, glm::value_ptr(projection));
+
 
         glBindVertexArray(vao);
         // glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, 0);
@@ -196,11 +226,8 @@ int main() {
 /*
  * Display FPS somewhere - BROKEN?
  *
- * Face culling or something?
  * Check if laying out the triangles differently changes anything
- * Read the perf stuff.
  * Try instancing?
- * "We got an OpenGL extension or two out of it at least. Use renderdoc and apitrace."
  *
  * Try some camera movement animation
  * Try doing a generic walking anywhere camera
