@@ -39,46 +39,56 @@ int main() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    int s = 100;
 
-    const int n = 3 * s * s * s;
-    float *vertices = new float[n * 3];
+    float vertices[] = {
+      -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
+      -0.5f,  0.5f, -0.5f, 0.1f, 0.5f, 0.7f,
+      0.5f,  0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
+      0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
 
-    float dn = 1 / (float)s;
+      -0.5f, -0.5f,  0.5f, 0.1f, 0.2f, 0.3f,
+      0.5f, -0.5f,  0.5f,  0.4f, 0.0f, 0.5f,
+      0.5f,  0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
+      -0.5f,  0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
 
-    float z_mult = 50.0f;
+      -0.5f,  0.5f,  0.5f, 0.1f, 0.2f, 0.3f,
+      -0.5f,  0.5f, -0.5f, 0.4f, 0.0f, 0.5f,
+      -0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f,
+      -0.5f, -0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
 
-    float x, y, z;
-    x = -0.5f;
-    for(int i = 0; i < s; ++i) {
-      y = -0.5f;
-      for(int j = 0; j < s; ++j) {
-        z = -0.5f;
-        for(int k = 0; k < s; ++k) {
-          int p = 9 * (i * s * s + j * s + k);
-          vertices[p] = x;
-          vertices[p + 1] = y;
-          vertices[p + 2] = z * z_mult;
+      0.5f,  0.5f,  0.5f,  0.1f, 0.2f, 0.3f,
+      0.5f, -0.5f,  0.5f,  0.1f, 0.5f, 0.7f,
+      0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
+      0.5f,  0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
 
-          vertices[p + 3] = x + dn * 0.5f;
-          vertices[p + 4] = y;
-          vertices[p + 5] = z * z_mult;
+      -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
+      0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
+      0.5f, -0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
+      -0.5f, -0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
 
-          vertices[p + 6] = x;
-          vertices[p + 7] = y + dn * 0.5f;
-          vertices[p + 8] = z * z_mult;
+      -0.5f,  0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
+      -0.5f,  0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
+      0.5f,  0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
+      0.5f,  0.5f, -0.5f,  0.4f, 0.0f, 0.5f
+    };
 
-          z += dn;
-        }
-        y += dn;
-      }
-      x += dn;
+
+    const int n = 36;
+    unsigned int indices[n];
+
+    for(int i = 0; i < n / 6; ++i) {
+      indices[i * 6] = i * 4;
+      indices[i * 6 + 1] = i * 4 + 1;
+      indices[i * 6 + 2] = i * 4 + 2;
+      indices[i * 6 + 3] = i * 4 + 2;
+      indices[i * 6 + 4] = i * 4 + 3;
+      indices[i * 6 + 5] = i * 4;
     }
 
     const char* vertexSource = R"glsl(
       #version 330 core
       layout (location = 0) in vec3 aPos;   // the position variable has attribute position 0
-      // layout (location = 1) in vec3 aColor; // the color variable has attribute position 1
+      layout (location = 1) in vec3 aColor; // the color variable has attribute position 1
 
       uniform mat4 model;
       uniform mat4 view;
@@ -88,9 +98,12 @@ int main() {
 
       void main()
       {
-          gl_Position = projection * view * model * vec4(aPos, 1.0);
-          // ourColor = aColor; // set ourColor to the input color we got from the vertex data
-          ourColor = gl_Position.xyz;
+          vec3 pos = aPos;
+          pos.x = pos.x + mod(gl_InstanceID * 1.1, 100.0);
+          pos.y = mod(pos.x * pos.x + 0.1, 10.0);
+          pos.y = pos.y + (gl_InstanceID - mod(gl_InstanceID * 1.1, 100.0)) * 0.07 * mod(sin(pos.x) * 123.0, 27.0) * 0.006;
+          gl_Position = projection * view * model * vec4(pos, 1.0);
+          ourColor = aColor; // set ourColor to the input color we got from the vertex data
       }
     )glsl";
 
@@ -105,7 +118,7 @@ int main() {
 
       void main()
       {
-          outColor = vec4(ourColor * shade + 0.2, 1.0);
+          outColor = vec4(ourColor * shade, 1.0);
       }
     )glsl";
 
@@ -141,20 +154,18 @@ int main() {
     unsigned int vao, vbo, ebo;
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
-    // glGenBuffers(1, &ebo);
+    glGenBuffers(1, &ebo);
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, n * 3 * sizeof(float), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
-    // glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     int tUniform = glGetUniformLocation(shaderProgram, "t");
     int shadeUniform = glGetUniformLocation(shaderProgram, "shade");
@@ -163,16 +174,17 @@ int main() {
     int projectionUniform = glGetUniformLocation(shaderProgram, "projection");
 
     glm::mat4 model = glm::mat4(1.0f);
-    // model = glm::rotate(model, glm::radians(-5.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(2.0f, 2.0f, 1.0f));
+    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, -1.0f, 0.0f));
+    float scale = 0.05;
+    model = glm::scale(model, glm::vec3(scale, scale, scale));
 
     glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(45.0f), mWidth / (float) mHeight, 0.1f, 100.0f);
 
-    float prev_t, dt = 0.0f;
+    float prev_t, dt;
     float t = 0.0f;
 
     int fps_frame = 0;
@@ -186,8 +198,8 @@ int main() {
         prev_t = t;
         t = glfwGetTime();
         dt = t - prev_t;
-
         ++fps_frame;
+
         if (fps_frame == 200) {
           printf("%f - %f = %f, %f fps\n", t, fps_prev_t, (t - fps_prev_t), 200 / (t - fps_prev_t));
           fps_prev_t = t;
@@ -204,16 +216,14 @@ int main() {
         glUniform1f(shadeUniform, 0.9f);
         glUniformMatrix4fv(modelUniform, 1, GL_FALSE, glm::value_ptr(model));
 
-        view = glm::rotate(view, glm::radians(sin(t) * 5.0f * dt), glm::vec3(0.0f, 1.0f, 0.0f));
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, dt));
+        view = glm::rotate(view, glm::radians(dt * 100.0f * rand() / RAND_MAX), glm::vec3(0.0f, 1.0f, 0.0f));
         glUniformMatrix4fv(viewUniform, 1, GL_FALSE, glm::value_ptr(view));
-
         glUniformMatrix4fv(projectionUniform, 1, GL_FALSE, glm::value_ptr(projection));
-
 
         glBindVertexArray(vao);
         // glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, 0);
-        glDrawArrays(GL_TRIANGLES, 0, n);
+        glDrawElementsInstanced(GL_TRIANGLES, n, GL_UNSIGNED_INT, 0, 10000);
+        // glDrawArrays(GL_TRIANGLES, 0, n);
         glBindVertexArray(0);
 
         // Flip Buffers and Draw
@@ -224,11 +234,6 @@ int main() {
 }
 
 /*
- * Display FPS somewhere - BROKEN?
- *
- * Check if laying out the triangles differently changes anything
- * Try instancing?
- *
  * Try some camera movement animation
  * Try doing a generic walking anywhere camera
  * Do some shapes finally
