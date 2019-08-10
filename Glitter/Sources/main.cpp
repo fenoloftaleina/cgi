@@ -168,9 +168,8 @@ int main() {
       void main()
       {
           vec3 pos = aPos;
-          pos.x = pos.x + mod(gl_InstanceID * 1.1, 100.0);
-          pos.y = mod(pos.x * pos.x + 0.1, 10.0);
-          pos.y = pos.y + (gl_InstanceID - mod(gl_InstanceID * 1.1, 100.0)) * 0.07 * mod(sin(pos.x) * 123.0, 27.0) * 0.006;
+          pos.x = pos.x + gl_InstanceID * 1.5 - 5.5;
+          pos = pos * 5.0;
           gl_Position = projection * view * model * vec4(pos, 1.0);
           ourColor = aColor; // set ourColor to the input color we got from the vertex data
       }
@@ -183,11 +182,13 @@ int main() {
       out vec4 outColor;
 
       uniform float t;
+      uniform vec2 res;
+
       uniform float shade;
 
       void main()
       {
-          outColor = vec4(ourColor * shade, 1.0);
+          outColor = vec4(ourColor * gl_FragCoord.xyz / vec3(res, 1.0), 1.0);
       }
     )glsl";
 
@@ -237,6 +238,7 @@ int main() {
     glEnableVertexAttribArray(1);
 
     int tUniform = glGetUniformLocation(shaderProgram, "t");
+    int resUniform = glGetUniformLocation(shaderProgram, "res");
     int shadeUniform = glGetUniformLocation(shaderProgram, "shade");
     int modelUniform = glGetUniformLocation(shaderProgram, "model");
     int viewUniform = glGetUniformLocation(shaderProgram, "view");
@@ -278,6 +280,8 @@ int main() {
 
         glUseProgram(shaderProgram);
         glUniform1f(tUniform, t);
+        // glUniform2f(resUniform, glm::value_ptr(glm::vec2(mWidth, mHeight)));
+        glUniform2f(resUniform, mWidth, mHeight);
         glUniform1f(shadeUniform, 0.9f);
         glUniformMatrix4fv(modelUniform, 1, GL_FALSE, glm::value_ptr(model));
 
@@ -288,7 +292,7 @@ int main() {
 
         glBindVertexArray(vao);
         // glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, 0);
-        glDrawElementsInstanced(GL_TRIANGLES, n, GL_UNSIGNED_INT, 0, 1000);
+        glDrawElementsInstanced(GL_TRIANGLES, n, GL_UNSIGNED_INT, 0, 13);
         // glDrawArrays(GL_TRIANGLES, 0, n);
         glBindVertexArray(0);
 
@@ -300,9 +304,9 @@ int main() {
 }
 
 /*
- * Try some camera movement animation
- * Try doing a generic walking anywhere camera
+ * Rotate matrix in the vertex shader dependent on instance id?
  * Do some shapes finally
+ *
  * Try some textures
  * Build some API? Orginize the code a bit
  * Simple string to tiles + 2d platformer?
