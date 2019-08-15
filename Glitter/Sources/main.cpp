@@ -1,3 +1,5 @@
+#define STB_IMAGE_IMPLEMENTATION
+
 // Local Headers
 #include "glitter.hpp"
 
@@ -110,35 +112,35 @@ int main() {
 
 
     float vertices[] = {
-      -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
-      -0.5f,  0.5f, -0.5f, 0.1f, 0.5f, 0.7f,
-      0.5f,  0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
-      0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
+      // -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
+      // -0.5f,  0.5f, -0.5f, 0.1f, 0.5f, 0.7f,
+      // 0.5f,  0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
+      // 0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f
 
-      -0.5f, -0.5f,  0.5f, 0.1f, 0.2f, 0.3f,
-      0.5f, -0.5f,  0.5f,  0.4f, 0.0f, 0.5f,
-      0.5f,  0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
-      -0.5f,  0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
+      -0.5f, -0.5f,  0.5f, 0.1f, 0.2f, 0.3f, 0.0f, 0.0f,
+      0.5f, -0.5f,  0.5f,  0.4f, 0.0f, 0.5f, 1.0f, 0.0f,
+      0.5f,  0.5f,  0.5f,  0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+      -0.5f,  0.5f,  0.5f, 0.1f, 0.5f, 0.7f, 0.0f, 1.0f
 
-      -0.5f,  0.5f,  0.5f, 0.1f, 0.2f, 0.3f,
-      -0.5f,  0.5f, -0.5f, 0.4f, 0.0f, 0.5f,
-      -0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f,
-      -0.5f, -0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
-
-      0.5f,  0.5f,  0.5f,  0.1f, 0.2f, 0.3f,
-      0.5f, -0.5f,  0.5f,  0.1f, 0.5f, 0.7f,
-      0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
-      0.5f,  0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
-
-      -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
-      0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
-      0.5f, -0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
-      -0.5f, -0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
-
-      -0.5f,  0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
-      -0.5f,  0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
-      0.5f,  0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
-      0.5f,  0.5f, -0.5f,  0.4f, 0.0f, 0.5f
+      // -0.5f,  0.5f,  0.5f, 0.1f, 0.2f, 0.3f,
+      // -0.5f,  0.5f, -0.5f, 0.4f, 0.0f, 0.5f,
+      // -0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f,
+      // -0.5f, -0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
+      //
+      // 0.5f,  0.5f,  0.5f,  0.1f, 0.2f, 0.3f,
+      // 0.5f, -0.5f,  0.5f,  0.1f, 0.5f, 0.7f,
+      // 0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
+      // 0.5f,  0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
+      //
+      // -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
+      // 0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
+      // 0.5f, -0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
+      // -0.5f, -0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
+      //
+      // -0.5f,  0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
+      // -0.5f,  0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
+      // 0.5f,  0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
+      // 0.5f,  0.5f, -0.5f,  0.4f, 0.0f, 0.5f
     };
 
 
@@ -158,12 +160,14 @@ int main() {
       #version 330 core
       layout (location = 0) in vec3 aPos;   // the position variable has attribute position 0
       layout (location = 1) in vec3 aColor; // the color variable has attribute position 1
+      layout (location = 2) in vec2 aTexCoord;
 
       uniform mat4 model;
       uniform mat4 view;
       uniform mat4 projection;
 
       out vec3 ourColor; // output a color to the fragment shader
+      out vec2 texCoord;
 
       void main()
       {
@@ -172,6 +176,7 @@ int main() {
           pos = pos * 5.0;
           gl_Position = projection * view * model * vec4(pos, 1.0);
           ourColor = aColor; // set ourColor to the input color we got from the vertex data
+          texCoord = vec2(aTexCoord.x, aTexCoord.y);
       }
     )glsl";
 
@@ -179,16 +184,20 @@ int main() {
       #version 330 core
 
       in vec3 ourColor;
+      in vec2 texCoord;
       out vec4 outColor;
 
       uniform float t;
       uniform vec2 res;
 
+      uniform sampler2D texture1;
+
       uniform float shade;
 
       void main()
       {
-          outColor = vec4(ourColor * gl_FragCoord.xyz / vec3(res, 1.0), 1.0);
+          //outColor = vec4(ourColor * gl_FragCoord.xyz / vec3(res, 1.0), 1.0);
+          outColor = texture(texture1, texCoord);
       }
     )glsl";
 
@@ -232,10 +241,38 @@ int main() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3* sizeof(float)));
     glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
+    // set the texture wrapping parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // set texture filtering parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // load image, create texture and generate mipmaps
+    stbi_set_flip_vertically_on_load(true);
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("/Users/ja/cgi/resources/zero.png", &width, &height, &nrChannels, 0);
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        printf("Failed to load texture");
+    }
+    stbi_image_free(data);
+
 
     int tUniform = glGetUniformLocation(shaderProgram, "t");
     int resUniform = glGetUniformLocation(shaderProgram, "res");
@@ -277,6 +314,8 @@ int main() {
         glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
         // glClear(GL_COLOR_BUFFER_BIT);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glBindTexture(GL_TEXTURE_2D, texture);
 
         glUseProgram(shaderProgram);
         glUniform1f(tUniform, t);
