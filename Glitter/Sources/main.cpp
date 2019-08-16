@@ -115,7 +115,7 @@ int main() {
       // -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
       // -0.5f,  0.5f, -0.5f, 0.1f, 0.5f, 0.7f,
       // 0.5f,  0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
-      // 0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f
+      // 0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
 
       -0.5f, -0.5f,  0.5f, 0.1f, 0.2f, 0.3f, 0.0f, 0.0f,
       0.5f, -0.5f,  0.5f,  0.4f, 0.0f, 0.5f, 1.0f, 0.0f,
@@ -251,6 +251,7 @@ int main() {
 
     unsigned int texture;
     glGenTextures(1, &texture);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
     // set the texture wrapping parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
@@ -280,6 +281,7 @@ int main() {
     int modelUniform = glGetUniformLocation(shaderProgram, "model");
     int viewUniform = glGetUniformLocation(shaderProgram, "view");
     int projectionUniform = glGetUniformLocation(shaderProgram, "projection");
+    int texture1Uniform = glGetUniformLocation(shaderProgram, "texture1");
 
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, -1.0f, 0.0f));
@@ -328,6 +330,8 @@ int main() {
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         glUniformMatrix4fv(viewUniform, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionUniform, 1, GL_FALSE, glm::value_ptr(projection));
+
+        glUniform1i(texture1Uniform, 0);
 
         glBindVertexArray(vao);
         // glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, 0);
