@@ -1,360 +1,140 @@
 #define STB_IMAGE_IMPLEMENTATION
 
-// Local Headers
-#include "glitter.hpp"
-
-// System Headers
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
-// Standard Headers
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <cmath>
+#include <iostream>
+#include <vector>
+#include <string>
 
-glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
+#include "buffer.hpp"
+#include "gl.hpp"
+#include "glitter.hpp"
+#include "input.hpp"
+#include "shaders.hpp"
+#include "textures.hpp"
+#include "utils.hpp"
 
-bool firstMouse = true;
-float yaw   = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
-float pitch =  0.0f;
-float lastX =  800.0f / 2.0;
-float lastY =  600.0 / 2.0;
-float fov   =  45.0f;
+Buffer b;
 
-float prev_t, dt;
-float t = 0.0f;
+Gl gl;
+Input input;
+Shaders shaders;
+Textures textures;
+Utils utils;
 
-int fps_frame = 0;
-float fps_prev_t = glfwGetTime();
-
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-  if (firstMouse)
-  {
-    lastX = xpos;
-    lastY = ypos;
-    firstMouse = false;
-  }
-
-  float xoffset = xpos - lastX;
-  float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-  lastX = xpos;
-  lastY = ypos;
-
-  float sensitivity = 0.1f; // change this value to your liking
-  xoffset *= sensitivity;
-  yoffset *= sensitivity;
-
-  yaw += xoffset;
-  pitch += yoffset;
-
-  // make sure that when pitch is out of bounds, screen doesn't get flipped
-  if (pitch > 89.0f)
-    pitch = 89.0f;
-  if (pitch < -89.0f)
-    pitch = -89.0f;
-
-  glm::vec3 front;
-  front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-  front.y = sin(glm::radians(pitch));
-  front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-  cameraFront = glm::normalize(front);
-}
-
-void process_input(GLFWwindow *window)
-{
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, true);
-
-  float cameraSpeed = 2.5 * dt;
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    cameraPos += cameraSpeed * cameraFront;
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    cameraPos -= cameraSpeed * cameraFront;
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-}
-
-float randf() {
-  return rand() / (float)RAND_MAX;
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+  input.mouse_callback(window, xpos, ypos);
 }
 
 int main() {
+  gl.basic_init(mouse_callback);
 
-    // Load GLFW and Create a Window
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    auto mWindow = glfwCreateWindow(mWidth, mHeight, "OpenGL", nullptr, nullptr);
+  textures.prepare();
+  shaders.utils = utils;
+  shaders.prepare();
 
-    // Check for Valid Context
-    if (mWindow == nullptr) {
-        fprintf(stderr, "Failed to Create OpenGL Context");
-        return EXIT_FAILURE;
+  float prev_t, dt;
+  float t = 0.0f;
+  int fps_frame = 0;
+  float fps_prev_t = glfwGetTime();
+
+  unsigned int shaderProgram = shaders.use(0);
+  int tUniform = glGetUniformLocation(shaderProgram, "t");
+  int resUniform = glGetUniformLocation(shaderProgram, "res");
+  int modelUniform = glGetUniformLocation(shaderProgram, "model");
+  int viewUniform = glGetUniformLocation(shaderProgram, "view");
+  int projectionUniform = glGetUniformLocation(shaderProgram, "projection");
+  int texture1Uniform = glGetUniformLocation(shaderProgram, "texture1");
+
+  glUniform2f(resUniform, gl.width, gl.height);
+
+  glm::mat4 model = glm::mat4(1.0f);
+  // model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, -1.0f, 0.0f));
+  float scale = 0.05;
+  model = glm::scale(model, glm::vec3(scale, scale, scale));
+
+  glm::mat4 view = glm::mat4(1.0f);
+  view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+
+  glm::mat4 projection;
+  projection = glm::perspective(glm::radians(45.0f), gl.width / (float) gl.height, 0.1f, 100.0f);
+
+  b.gen_plane();
+  Textures::Mapping &m = textures.mappings[1];
+  b.set_plane_tex_coords(0, m);
+  b.setup();
+
+  // Rendering Loop
+  while (glfwWindowShouldClose(gl.window) == false) {
+    if (glfwGetKey(gl.window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+      glfwSetWindowShouldClose(gl.window, true);
+
+    prev_t = t;
+    t = glfwGetTime();
+    dt = t - prev_t;
+    ++fps_frame;
+
+    if (fps_frame == 200) {
+      printf("%f - %f = %f, %f fps\n", t, fps_prev_t, (t - fps_prev_t), 200 / (t - fps_prev_t));
+      fps_prev_t = t;
+      fps_frame = 0;
     }
 
-    // Create Context and Load OpenGL Functions
-    glfwMakeContextCurrent(mWindow);
-    glfwSetCursorPosCallback(mWindow, mouse_callback);
-    glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    gladLoadGL();
+    input.process_input(gl.window, dt);
 
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+    // Background Fill Color
+    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
+    // glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // glBindTexture(GL_TEXTURE_2D, 0);
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glUniform1f(tUniform, t);
+    glUniformMatrix4fv(modelUniform, 1, GL_FALSE, glm::value_ptr(model));
 
+    // view = glm::rotate(view, glm::radians(dt * 100.0f * rand() / RAND_MAX), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 view = glm::lookAt(input.cameraPos, input.cameraPos + input.cameraFront, input.cameraUp);
+    glUniformMatrix4fv(viewUniform, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projectionUniform, 1, GL_FALSE, glm::value_ptr(projection));
 
-    float vertices[] = {
-      // -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
-      // -0.5f,  0.5f, -0.5f, 0.1f, 0.5f, 0.7f,
-      // 0.5f,  0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
-      // 0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
+    // glUniform1i(texture1Uniform, 0);
 
-      -0.5f, -0.5f,  0.5f, 0.1f, 0.2f, 0.3f, 0.0f, 0.0f,
-      0.5f, -0.5f,  0.5f,  0.4f, 0.0f, 0.5f, 1.0f, 0.0f,
-      0.5f,  0.5f,  0.5f,  0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-      -0.5f,  0.5f,  0.5f, 0.1f, 0.5f, 0.7f, 0.0f, 1.0f
+    b.bind();
 
-      // -0.5f,  0.5f,  0.5f, 0.1f, 0.2f, 0.3f,
-      // -0.5f,  0.5f, -0.5f, 0.4f, 0.0f, 0.5f,
-      // -0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f,
-      // -0.5f, -0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
-      //
-      // 0.5f,  0.5f,  0.5f,  0.1f, 0.2f, 0.3f,
-      // 0.5f, -0.5f,  0.5f,  0.1f, 0.5f, 0.7f,
-      // 0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 0.5f,
-      // 0.5f,  0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
-      //
-      // -0.5f, -0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
-      // 0.5f, -0.5f, -0.5f,  0.4f, 0.0f, 0.5f,
-      // 0.5f, -0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
-      // -0.5f, -0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
-      //
-      // -0.5f,  0.5f, -0.5f, 0.1f, 0.2f, 0.3f,
-      // -0.5f,  0.5f,  0.5f, 0.1f, 0.5f, 0.7f,
-      // 0.5f,  0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
-      // 0.5f,  0.5f, -0.5f,  0.4f, 0.0f, 0.5f
-    };
+    Textures::Mapping &m = textures.mappings[(int)(t * 5) % 2];
+    b.set_plane_tex_coords(0, m);
+    b.update_vertices();
 
+    b.draw();
+    b.unbind();
 
-    const int n = 36;
-    unsigned int indices[n];
-
-    for(int i = 0; i < n / 6; ++i) {
-      indices[i * 6] = i * 4;
-      indices[i * 6 + 1] = i * 4 + 1;
-      indices[i * 6 + 2] = i * 4 + 2;
-      indices[i * 6 + 3] = i * 4 + 2;
-      indices[i * 6 + 4] = i * 4 + 3;
-      indices[i * 6 + 5] = i * 4;
-    }
-
-    const char* vertexSource = R"glsl(
-      #version 330 core
-      layout (location = 0) in vec3 aPos;   // the position variable has attribute position 0
-      layout (location = 1) in vec3 aColor; // the color variable has attribute position 1
-      layout (location = 2) in vec2 aTexCoord;
-
-      uniform mat4 model;
-      uniform mat4 view;
-      uniform mat4 projection;
-
-      out vec3 ourColor; // output a color to the fragment shader
-      out vec2 texCoord;
-
-      void main()
-      {
-          vec3 pos = aPos;
-          pos.x = pos.x + gl_InstanceID * 1.5 - 5.5;
-          pos = pos * 5.0;
-          gl_Position = projection * view * model * vec4(pos, 1.0);
-          ourColor = aColor; // set ourColor to the input color we got from the vertex data
-          texCoord = vec2(aTexCoord.x, aTexCoord.y);
-      }
-    )glsl";
-
-    const char* fragmentSource = R"glsl(
-      #version 330 core
-
-      in vec3 ourColor;
-      in vec2 texCoord;
-      out vec4 outColor;
-
-      uniform float t;
-      uniform vec2 res;
-
-      uniform sampler2D texture1;
-
-      uniform float shade;
-
-      void main()
-      {
-          //outColor = vec4(ourColor * gl_FragCoord.xyz / vec3(res, 1.0), 1.0);
-          outColor = texture(texture1, texCoord);
-      }
-    )glsl";
-
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexSource, NULL);
-    glCompileShader(vertexShader);
-
-    char buffer[512];
-    int success;
-
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-      glGetShaderInfoLog(vertexShader, 512, NULL, buffer);
-      fprintf(stderr, "Vertex shader info log:\n%s\n", buffer);
-    }
-
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
-    glCompileShader(fragmentShader);
-
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-      glGetShaderInfoLog(fragmentShader, 512, NULL, buffer);
-      fprintf(stderr, "Fragment shader info log:\n%s\n", buffer);
-    }
-
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-
-    glLinkProgram(shaderProgram);
-
-    unsigned int vao, vbo, ebo;
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
-
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3* sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-
-
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
-    // set the texture wrapping parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // set texture filtering parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // load image, create texture and generate mipmaps
-    stbi_set_flip_vertically_on_load(true);
-    int width, height, nrChannels;
-    unsigned char *data = stbi_load("/Users/ja/cgi/resources/zero.png", &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        printf("Failed to load texture");
-    }
-    stbi_image_free(data);
-
-
-    int tUniform = glGetUniformLocation(shaderProgram, "t");
-    int resUniform = glGetUniformLocation(shaderProgram, "res");
-    int shadeUniform = glGetUniformLocation(shaderProgram, "shade");
-    int modelUniform = glGetUniformLocation(shaderProgram, "model");
-    int viewUniform = glGetUniformLocation(shaderProgram, "view");
-    int projectionUniform = glGetUniformLocation(shaderProgram, "projection");
-    int texture1Uniform = glGetUniformLocation(shaderProgram, "texture1");
-
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, -1.0f, 0.0f));
-    float scale = 0.05;
-    model = glm::scale(model, glm::vec3(scale, scale, scale));
-
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-
-    glm::mat4 projection;
-    projection = glm::perspective(glm::radians(45.0f), mWidth / (float) mHeight, 0.1f, 100.0f);
-
-    // Rendering Loop
-    while (glfwWindowShouldClose(mWindow) == false) {
-        if (glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-            glfwSetWindowShouldClose(mWindow, true);
-
-        prev_t = t;
-        t = glfwGetTime();
-        dt = t - prev_t;
-        ++fps_frame;
-
-        if (fps_frame == 200) {
-          printf("%f - %f = %f, %f fps\n", t, fps_prev_t, (t - fps_prev_t), 200 / (t - fps_prev_t));
-          fps_prev_t = t;
-          fps_frame = 0;
-        }
-
-        process_input(mWindow);
-
-        // Background Fill Color
-        glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
-        // glClear(GL_COLOR_BUFFER_BIT);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glBindTexture(GL_TEXTURE_2D, texture);
-
-        glUseProgram(shaderProgram);
-        glUniform1f(tUniform, t);
-        // glUniform2f(resUniform, glm::value_ptr(glm::vec2(mWidth, mHeight)));
-        glUniform2f(resUniform, mWidth, mHeight);
-        glUniform1f(shadeUniform, 0.9f);
-        glUniformMatrix4fv(modelUniform, 1, GL_FALSE, glm::value_ptr(model));
-
-        // view = glm::rotate(view, glm::radians(dt * 100.0f * rand() / RAND_MAX), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-        glUniformMatrix4fv(viewUniform, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projectionUniform, 1, GL_FALSE, glm::value_ptr(projection));
-
-        glUniform1i(texture1Uniform, 0);
-
-        glBindVertexArray(vao);
-        // glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, 0);
-        glDrawElementsInstanced(GL_TRIANGLES, n, GL_UNSIGNED_INT, 0, 13);
-        // glDrawArrays(GL_TRIANGLES, 0, n);
-        glBindVertexArray(0);
-
-        // Flip Buffers and Draw
-        glfwSwapBuffers(mWindow);
-        glfwPollEvents();
-    }   glfwTerminate();
-    return EXIT_SUCCESS;
+    // Flip Buffers and Draw
+    glfwSwapBuffers(gl.window);
+    glfwPollEvents();
+  }   glfwTerminate();
+  return EXIT_SUCCESS;
 }
 
 /*
- * Rotate matrix in the vertex shader dependent on instance id?
  * Do some shapes finally
  *
- * Try some textures
- * Build some API? Orginize the code a bit
+ * Uniform buffer objects
+ * Add variability around buffer contents mapping (pos, color, tex uv, etc.).
+ * Partially updating VBOs?
+ * Test glMapBuffer performance (https://learnopengl.com/Advanced-OpenGL/Advanced-Data)
+ *
  * Simple string to tiles + 2d platformer?
+ *
+ * Enclose all of this in a scene or system thing, so that a menu screen can be a separate one
+ * Animations, looping animations, start me an animation, sprite animations, animation speed, other properties animations
+ * Game objects, like a player having "pointers" to where are his positions in a vbo buffer to edit.
+ * Editor to move stuff around? Add animations?
+ *
+ * What's the best thing you can do. A game without clear win states.
+ *
+ * what if, putting things out of their context, imposing constraints
+ *
  */
