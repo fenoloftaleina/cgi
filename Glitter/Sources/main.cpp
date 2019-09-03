@@ -117,24 +117,3 @@ int main() {
   }   glfwTerminate();
   return EXIT_SUCCESS;
 }
-
-/*
- * Do some shapes finally
- *
- * Uniform buffer objects
- * Add variability around buffer contents mapping (pos, color, tex uv, etc.).
- * Partially updating VBOs?
- * Test glMapBuffer performance (https://learnopengl.com/Advanced-OpenGL/Advanced-Data)
- *
- * Simple string to tiles + 2d platformer?
- *
- * Enclose all of this in a scene or system thing, so that a menu screen can be a separate one
- * Animations, looping animations, start me an animation, sprite animations, animation speed, other properties animations
- * Game objects, like a player having "pointers" to where are his positions in a vbo buffer to edit.
- * Editor to move stuff around? Add animations?
- *
- * What's the best thing you can do. A game without clear win states.
- *
- * what if, putting things out of their context, imposing constraints
- *
- */
